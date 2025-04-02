@@ -113,6 +113,8 @@ struct SVGRenderer {
     tilings: Deduplicator<Tiling>,
     /// These are the gradients that compose a conic gradient.
     conic_subgradients: Deduplicator<SVGSubGradient>,
+
+    font_classes: Deduplicator<EcoString>,
 }
 
 /// Contextual information for rendering.
@@ -165,6 +167,7 @@ impl SVGRenderer {
             conic_subgradients: Deduplicator::new('s'),
             tiling_refs: Deduplicator::new('p'),
             tilings: Deduplicator::new('t'),
+            font_classes: Deduplicator::new('o'),
         }
     }
 
@@ -275,6 +278,7 @@ impl SVGRenderer {
         self.write_subgradients();
         self.write_tilings();
         self.write_tiling_refs();
+        self.write_font_classes();
         self.xml.end_document()
     }
 

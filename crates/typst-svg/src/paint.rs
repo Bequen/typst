@@ -430,6 +430,18 @@ impl SVGRenderer {
 
         self.xml.end_element();
     }
+
+    pub(super) fn write_font_classes(&mut self) {
+        if self.font_classes.is_empty() {
+            return;
+        }
+
+        self.xml.start_element("style");
+        self.xml.write_text(&self.font_classes.iter()
+            .map(|(id, font_family)| format!(".{} {{ font-family: \"{}\" }}", id, font_family))
+            .collect::<Vec<_>>().join("\n"));
+        self.xml.end_element();
+    }
 }
 
 /// A reference to a deduplicated tiling, with a transform matrix.

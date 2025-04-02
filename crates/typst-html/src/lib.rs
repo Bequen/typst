@@ -15,6 +15,7 @@ use typst_library::introspection::{
     Introspector, Locator, LocatorLink, SplitLocator, TagElem,
 };
 use typst_library::layout::{Abs, Axes, BlockBody, BlockElem, BoxElem, Region, Size};
+use typst_library::math::EquationElem;
 use typst_library::model::{DocumentInfo, ParElem};
 use typst_library::routines::{Arenas, FragmentKind, Pair, RealizationKind, Routines};
 use typst_library::text::{LinebreakElem, SmartQuoteElem, SpaceElem, TextElem};
@@ -250,6 +251,11 @@ fn handle(
             Region::new(Size::splat(Abs::inf()), Axes::splat(false)),
         )?;
         output.push(HtmlNode::Frame(frame));
+    } else if let Some(elem) = child.to_packed::<BlockElem>() {
+        engine.sink.warn(warning!(
+            child.span(),
+            "Equation found"
+        ));
     } else {
         engine.sink.warn(warning!(
             child.span(),
