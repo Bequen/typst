@@ -18,6 +18,14 @@ impl SVGRenderer {
     /// try to render the text as SVG first, then bitmap, then outline. If none
     /// of them works, we will skip the text.
     pub(super) fn render_text(&mut self, state: State, text: &TextItem) {
+        if text.font.info().family == "New Computer Modern Math" {
+            self.render_glyph_text(state, text);
+        } else {
+            self.render_native_text(state, text);
+        }
+    }
+
+    fn render_glyph_text(&mut self, state: State, text: &TextItem) {
         let scale: f64 = text.size.to_pt() / text.font.units_per_em();
 
         self.xml.start_element("g");
@@ -46,6 +54,26 @@ impl SVGRenderer {
             x += glyph.x_advance.at(text.size).to_pt();
         }
 
+        self.xml.end_element();
+    }
+
+    fn render_native_text(&mut self, state: State, text: &TextItem) {
+        self.xml.start_element("text");
+
+        self.write_fill(
+            &text.fill,
+            FillRule::default(),
+            Size::new(Abs::pt(0.0), Abs::pt(0.0)),
+            self.text_paint_transform(state, &text.fill)
+        );
+        self.xml.write_attribute("font-size", &format!("{}px", text.size.to_pt()));
+        self.xml.write_attribute("font-weight", &text.font.info().variant.weight.to_number());
+
+        let font = text.font.info().family.clone();
+        let font_family = self.add_font(font.into());
+        self.xml.write_attribute("class", &font_family);
+
+        self.xml.write_text(text.text.as_str());
         self.xml.end_element();
     }
 
@@ -212,6 +240,12 @@ impl SVGRenderer {
         }
 
         self.xml.end_element();
+    }
+
+    fn add_font(&mut self, family: EcoString) -> String {
+        let hash = hash128(&family);
+        let id = self.font_classes.insert_with(hash, || family);
+        id.to_string()
     }
 }
 
