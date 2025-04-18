@@ -69,9 +69,8 @@ impl SVGRenderer {
         self.xml.write_attribute("font-size", &format!("{}px", text.size.to_pt()));
         self.xml.write_attribute("font-weight", &text.font.info().variant.weight.to_number());
 
-        let font = text.font.info().family.clone();
-        let font_family = self.add_font(font.into());
-        self.xml.write_attribute("class", &font_family);
+        let _ = self.add_font(text.font.clone());
+        self.xml.write_attribute("font-family", &text.font.info().family);
 
         self.xml.write_text(text.text.as_str());
         self.xml.end_element();
@@ -242,8 +241,8 @@ impl SVGRenderer {
         self.xml.end_element();
     }
 
-    fn add_font(&mut self, family: EcoString) -> String {
-        let hash = hash128(&family);
+    fn add_font(&mut self, family: Font) -> String {
+        let hash = hash128(&family.info().family);
         let id = self.font_classes.insert_with(hash, || family);
         id.to_string()
     }

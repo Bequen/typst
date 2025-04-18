@@ -14,6 +14,7 @@ use typst_library::layout::{
     Abs, Frame, FrameItem, FrameKind, GroupItem, Page, PagedDocument, Point, Ratio, Size,
     Transform,
 };
+use typst_library::text::Font;
 use typst_library::visualize::{Geometry, Gradient, Tiling};
 use typst_utils::hash128;
 use xmlwriter::XmlWriter;
@@ -114,7 +115,7 @@ struct SVGRenderer {
     /// These are the gradients that compose a conic gradient.
     conic_subgradients: Deduplicator<SVGSubGradient>,
 
-    font_classes: Deduplicator<EcoString>,
+    font_classes: Deduplicator<Font>,
 }
 
 /// Contextual information for rendering.

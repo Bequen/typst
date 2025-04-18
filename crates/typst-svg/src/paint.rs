@@ -1,9 +1,12 @@
 use std::f32::consts::TAU;
 
+use base64::prelude::BASE64_STANDARD_NO_PAD;
+use base64::Engine;
 use ecow::{eco_format, EcoString};
 use ttf_parser::OutlineBuilder;
 use typst_library::foundations::Repr;
 use typst_library::layout::{Angle, Axes, Frame, Quadrant, Ratio, Size, Transform};
+use typst_library::text::Font;
 use typst_library::visualize::{Color, FillRule, Gradient, Paint, RatioOrAngle, Tiling};
 use typst_utils::hash128;
 use xmlwriter::XmlWriter;
@@ -14,6 +17,10 @@ use crate::{Id, SVGRenderer, State, SvgMatrix, SvgPathBuilder};
 /// This is a heuristic value that seems to work well.
 /// Smaller values could be interesting for optimization.
 const CONIC_SEGMENT: usize = 360;
+
+fn get_source_for_font(font: &Font) -> String {
+    format!("url(data:font/ttf;charset=utf-8;base64,{})", BASE64_STANDARD_NO_PAD.encode(font.ttf().raw_face().data))
+}
 
 impl SVGRenderer {
     /// Render a frame to a string.
@@ -438,7 +445,7 @@ impl SVGRenderer {
 
         self.xml.start_element("style");
         self.xml.write_text(&self.font_classes.iter()
-            .map(|(id, font_family)| format!(".{} {{ font-family: \"{}\" }}", id, font_family))
+            .map(|(id, font_family)| format!("@font-face {{ font-family: \"{}\"; src: {}; }}", font_family.info().family, get_source_for_font(font_family)))
             .collect::<Vec<_>>().join("\n"));
         self.xml.end_element();
     }
