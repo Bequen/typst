@@ -73,6 +73,14 @@ impl SVGRenderer {
         self.xml.write_attribute("font-family", &text.font.info().family);
 
         self.xml.write_text(text.text.as_str());
+
+        for c in &text.glyphs {
+            let glyph_remapper = self.glyph_remappers
+                .entry(text.font.clone())
+                .or_default();
+            glyph_remapper.remap(c.id);
+        }
+
         self.xml.end_element();
     }
 

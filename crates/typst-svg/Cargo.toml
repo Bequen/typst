@@ -22,6 +22,8 @@ comemo = { workspace = true }
 ecow = { workspace = true }
 flate2 = { workspace = true }
 image = { workspace = true }
+miniz_oxide = { workspace = true }
+subsetter = { workspace = true }
 ttf-parser = { workspace = true }
 xmlparser = { workspace = true }
 xmlwriter = { workspace = true }

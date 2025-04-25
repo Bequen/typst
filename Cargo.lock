@@ -3081,6 +3081,8 @@ dependencies = [
  "ecow",
  "flate2",
  "image",
+ "miniz_oxide",
+ "subsetter",
  "ttf-parser",
  "typst-library",
  "typst-macros",

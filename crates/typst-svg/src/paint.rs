@@ -1,9 +1,11 @@
 use std::f32::consts::TAU;
+use std::sync::Arc;
 
 use base64::prelude::BASE64_STANDARD_NO_PAD;
 use base64::Engine;
 use ecow::{eco_format, EcoString};
-use ttf_parser::OutlineBuilder;
+use subsetter::GlyphRemapper;
+use ttf_parser::{OutlineBuilder, Tag};
 use typst_library::foundations::Repr;
 use typst_library::layout::{Angle, Axes, Frame, Quadrant, Ratio, Size, Transform};
 use typst_library::text::Font;
@@ -18,9 +20,7 @@ use crate::{Id, SVGRenderer, State, SvgMatrix, SvgPathBuilder};
 /// Smaller values could be interesting for optimization.
 const CONIC_SEGMENT: usize = 360;
 
-fn get_source_for_font(font: &Font) -> String {
-    format!("url(data:font/ttf;charset=utf-8;base64,{})", BASE64_STANDARD_NO_PAD.encode(font.ttf().raw_face().data))
-}
+
 
 impl SVGRenderer {
     /// Render a frame to a string.
@@ -438,6 +438,11 @@ impl SVGRenderer {
         self.xml.end_element();
     }
 
+    fn get_source_for_font(&self, font: &Font) -> String {
+        let subset = subset_font(font, self.glyph_remappers.get(font).unwrap()).unwrap();
+        format!("url(data:font/ttf;charset=utf-8;base64,{})", BASE64_STANDARD_NO_PAD.encode(subset.as_ref()))
+    }
+
     pub(super) fn write_font_classes(&mut self) {
         if self.font_classes.is_empty() {
             return;
@@ -445,10 +450,45 @@ impl SVGRenderer {
 
         self.xml.start_element("style");
         self.xml.write_text(&self.font_classes.iter()
-            .map(|(id, font_family)| format!("@font-face {{ font-family: \"{}\"; src: {}; }}", font_family.info().family, get_source_for_font(font_family)))
+            .map(|(id, font_family)| format!("@font-face {{ font-family: \"{}\"; src: {}; }}", font_family.info().family, self.get_source_for_font(font_family)))
             .collect::<Vec<_>>().join("\n"));
         self.xml.end_element();
     }
+}
+
+const CFF: Tag = Tag::from_bytes(b"CFF ");
+
+/// Compress data with the DEFLATE algorithm.
+fn deflate(data: &[u8]) -> Vec<u8> {
+    const COMPRESSION_LEVEL: u8 = 6;
+    miniz_oxide::deflate::compress_to_vec_zlib(data, COMPRESSION_LEVEL)
+}
+
+/// Subset a font to the given glyphs.
+///
+/// - For a font with TrueType outlines, this produces the whole OpenType font.
+/// - For a font with CFF outlines, this produces just the CFF font program.
+///
+/// In both cases, this returns the already compressed data.
+#[comemo::memoize]
+#[typst_macros::time(name = "subset font")]
+fn subset_font(
+    font: &Font,
+    glyph_remapper: &GlyphRemapper,
+) -> Result<Arc<Vec<u8>>, subsetter::Error> {
+
+    let data = font.data();
+    let subset = subsetter::subset(data, font.index(), glyph_remapper)?;
+    let mut data = subset.as_ref();
+
+    // Extract the standalone CFF font program if applicable.
+    let raw = ttf_parser::RawFace::parse(data, 0).unwrap();
+    if let Some(cff) = raw.table(CFF) {
+        data = cff;
+    }
+
+
+    Ok(Arc::new(deflate(data)))
 }
 
 /// A reference to a deduplicated tiling, with a transform matrix.

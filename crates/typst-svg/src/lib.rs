@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::fmt::{self, Display, Formatter, Write};
 
 use ecow::EcoString;
+use subsetter::GlyphRemapper;
 use ttf_parser::OutlineBuilder;
 use typst_library::layout::{
     Abs, Frame, FrameItem, FrameKind, GroupItem, Page, PagedDocument, Point, Ratio, Size,
@@ -116,6 +117,8 @@ struct SVGRenderer {
     conic_subgradients: Deduplicator<SVGSubGradient>,
 
     font_classes: Deduplicator<Font>,
+
+    glyph_remappers: HashMap<Font, GlyphRemapper>,
 }
 
 /// Contextual information for rendering.
@@ -169,6 +172,7 @@ impl SVGRenderer {
             tiling_refs: Deduplicator::new('p'),
             tilings: Deduplicator::new('t'),
             font_classes: Deduplicator::new('o'),
+            glyph_remappers: HashMap::new()
         }
     }
 
