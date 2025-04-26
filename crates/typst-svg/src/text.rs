@@ -11,7 +11,7 @@ use typst_library::visualize::{
 };
 use typst_utils::hash128;
 
-use crate::{SVGRenderer, State, SvgMatrix, SvgPathBuilder};
+use crate::{SVGRenderer, State, SvgMatrix, SvgGlyphPathBuilder};
 
 impl SVGRenderer {
     /// Render a text item. The text is rendered as a group of glyphs. We will
@@ -21,16 +21,16 @@ impl SVGRenderer {
         let scale: f64 = text.size.to_pt() / text.font.units_per_em();
 
         self.xml.start_element("g");
-        self.xml.write_attribute("class", "typst-text");
-        self.xml.write_attribute("transform", "scale(1, -1)");
+        // self.xml.write_attribute("class", "typst-text");
+        self.xml.write_attribute("transform", &format!("scale(1, -1) translate({} {})", state.transform.tx.to_pt(), -state.transform.ty.to_pt()));
 
         let mut x: f64 = 0.0;
         for glyph in &text.glyphs {
             let id = GlyphId(glyph.id);
             let offset = x + glyph.x_offset.at(text.size).to_pt();
 
-            self.render_svg_glyph(text, id, offset, scale)
-                .or_else(|| self.render_bitmap_glyph(text, id, offset))
+            self.render_svg_glyph(&state, text, id, offset, scale)
+                .or_else(|| self.render_bitmap_glyph(&state, text, id, offset))
                 .or_else(|| {
                     self.render_outline_glyph(
                         state
@@ -52,6 +52,7 @@ impl SVGRenderer {
     /// Render a glyph defined by an SVG.
     fn render_svg_glyph(
         &mut self,
+        state: &State,
         text: &TextItem,
         id: GlyphId,
         x_offset: f64,
@@ -72,7 +73,9 @@ impl SVGRenderer {
 
         self.xml.start_element("use");
         self.xml.write_attribute_fmt("xlink:href", format_args!("#{id}"));
-        self.xml.write_attribute("x", &x_offset);
+        self.xml.write_attribute("x", &(x_offset));
+        // self.xml.write_attribute("y", &state.transform.ty.to_pt());
+        // self.xml.write_attribute("transform", &format!("translate({} {})", state.transform.tx.to_pt(), state.transform.ty.to_pt()));
         self.xml.end_element();
 
         Some(())
@@ -81,6 +84,7 @@ impl SVGRenderer {
     /// Render a glyph defined by a bitmap.
     fn render_bitmap_glyph(
         &mut self,
+        state: &State,
         text: &TextItem,
         id: GlyphId,
         x_offset: f64,
@@ -109,6 +113,7 @@ impl SVGRenderer {
         // it.
         let scale_factor = target_height / image.height();
         self.xml.write_attribute("x", &(x_offset / scale_factor));
+        // self.xml.write_attribute("y", &(state.transform.ty.to_pt()));
         self.xml.write_attribute_fmt(
             "transform",
             format_args!("scale({scale_factor} -{scale_factor})",),
@@ -234,7 +239,7 @@ fn convert_outline_glyph_to_path(
     id: GlyphId,
     scale: Ratio,
 ) -> Option<EcoString> {
-    let mut builder = SvgPathBuilder::with_scale(scale);
+    let mut builder = SvgGlyphPathBuilder::with_scale(scale);
     font.ttf().outline_glyph(id, &mut builder)?;
     Some(builder.0)
 }
