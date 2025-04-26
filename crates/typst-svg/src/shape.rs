@@ -157,10 +157,7 @@ impl SVGRenderer {
 /// Convert a geometry to an SVG path.
 #[comemo::memoize]
 fn convert_geometry_to_path(transform: &Transform, geometry: &Geometry) -> EcoString {
-    let mut builder = SvgPathBuilder::with_translate(Point::new(
-        transform.tx,
-        transform.ty,
-    ));
+    let mut builder = SvgPathBuilder::default();
 
     match geometry {
         Geometry::Line(t) => {
@@ -180,7 +177,7 @@ fn convert_geometry_to_path(transform: &Transform, geometry: &Geometry) -> EcoSt
 pub fn convert_curve(transform: &Transform, curve: &Curve) -> EcoString {
     let mut builder = SvgPathBuilder::with_translate(Point::new(
         transform.tx,
-        transform.ty,
+        transform.ty
     ));
     for item in &curve.0 {
         match item {

@@ -468,12 +468,15 @@ impl SvgPathBuilder {
 
     fn line_to(&mut self, x: f32, y: f32) {
         let scale = self.scale();
-        if x != 0.0 && y != 0.0 {
-            write!(&mut self.0, "l {} {} ", x * scale, y * scale).unwrap();
-        } else if x != 0.0 {
-            write!(&mut self.0, "h {} ", x * scale).unwrap();
-        } else if y != 0.0 {
-            write!(&mut self.0, "v {} ", y * scale).unwrap();
+        let _x = x * scale - self.2.x.to_pt() as f32;
+        let _y = y * scale - self.2.y.to_pt() as f32;
+
+        if _x != 0.0 && _y != 0.0 {
+            write!(&mut self.0, "l {} {} ", _x, _y).unwrap();
+        } else if _x != 0.0 {
+            write!(&mut self.0, "h {} ", _x).unwrap();
+        } else if _y != 0.0 {
+            write!(&mut self.0, "v {} ", _y).unwrap();
         }
         self.2 = Point::new(Abs::pt((x * scale) as f64), Abs::pt((y * scale) as f64));
     }
