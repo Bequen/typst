@@ -11,6 +11,10 @@ use crate::{SVGRenderer, State, SvgPathBuilder};
 impl SVGRenderer {
     /// Render a shape element.
     pub(super) fn render_shape(&mut self, state: State, shape: &Shape) {
+        if shape.fill.is_none() && shape.stroke.is_none() {
+            return;
+        }
+
         self.xml.start_element("path");
         self.xml.write_attribute("x", &state.transform.tx.to_pt());
         self.xml.write_attribute("y", &state.transform.ty.to_pt());
