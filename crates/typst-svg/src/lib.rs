@@ -220,27 +220,6 @@ impl SVGRenderer {
                 continue;
             }
 
-            let x = state.transform.tx.to_pt() + pos.x.to_pt();
-            let y = state.transform.ty.to_pt() + pos.y.to_pt();
-            // self.xml.start_element("g");
-            // self.xml
-            //    .write_attribute_fmt("transform", format_args!("translate({x} {y})"));
-            /* if frame.items().len() > 1 {
-                if x != 0.0 && y != 0.0 {
-                    self.xml.start_element("g");
-                    self.xml
-                        .write_attribute_fmt("transform", format_args!("translate({x} {y})"));
-                } else if x != 0.0 {
-                    self.xml.start_element("g");
-                    self.xml
-                        .write_attribute_fmt("transform", format_args!("translateX({x})"));
-                } else if y != 0.0 {
-                    self.xml.start_element("g");
-                    self.xml
-                        .write_attribute_fmt("transform", format_args!("translateY({y})"));
-                }
-            } */
-
             match item {
                 FrameItem::Group(group) => {
                     self.render_group(state.pre_translate(*pos), group)
@@ -255,11 +234,6 @@ impl SVGRenderer {
                 FrameItem::Link(_, _) => unreachable!(),
                 FrameItem::Tag(_) => unreachable!(),
             };
-
-            // self.xml.end_element();
-            /* if frame.items().len() > 1 && (x != 0.0 || y != 0.0) {
-                self.xml.end_element();
-            } */
         }
 
         if frame.items().len() > 1 {
@@ -462,7 +436,10 @@ impl Default for SvgPathBuilder {
 impl SvgPathBuilder {
     fn move_to(&mut self, x: f32, y: f32) {
         let scale = self.scale();
-        write!(&mut self.0, "m {} {} ", x * scale, y * scale).unwrap();
+        if x != 0.0 || y != 0.0 {
+            write!(&mut self.0, "m {} {} ", x, y).unwrap();
+        }
+
         self.2 = Point::new(Abs::pt((x * scale) as f64), Abs::pt((y * scale) as f64));
     }
 

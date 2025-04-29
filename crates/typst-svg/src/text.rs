@@ -29,8 +29,8 @@ impl SVGRenderer {
             let id = GlyphId(glyph.id);
             let offset = x + glyph.x_offset.at(text.size).to_pt();
 
-            self.render_svg_glyph(&state, text, id, offset, scale)
-                .or_else(|| self.render_bitmap_glyph(&state, text, id, offset))
+            self.render_svg_glyph(text, id, offset, scale)
+                .or_else(|| self.render_bitmap_glyph(text, id, offset))
                 .or_else(|| {
                     self.render_outline_glyph(
                         state
@@ -52,7 +52,6 @@ impl SVGRenderer {
     /// Render a glyph defined by an SVG.
     fn render_svg_glyph(
         &mut self,
-        state: &State,
         text: &TextItem,
         id: GlyphId,
         x_offset: f64,
@@ -84,7 +83,6 @@ impl SVGRenderer {
     /// Render a glyph defined by a bitmap.
     fn render_bitmap_glyph(
         &mut self,
-        state: &State,
         text: &TextItem,
         id: GlyphId,
         x_offset: f64,

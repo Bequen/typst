@@ -16,9 +16,7 @@ impl SVGRenderer {
         }
 
         self.xml.start_element("path");
-        self.xml.write_attribute("x", &state.transform.tx.to_pt());
-        self.xml.write_attribute("y", &state.transform.ty.to_pt());
-        self.xml.write_attribute("class", "typst-shape");
+        // self.xml.write_attribute("class", "typst-shape");
 
         if let Some(paint) = &shape.fill {
             self.write_fill(
@@ -165,7 +163,7 @@ fn convert_geometry_to_path(transform: &Transform, geometry: &Geometry) -> EcoSt
 
     match geometry {
         Geometry::Line(t) => {
-            builder.move_to(0.0, 0.0);
+            // builder.move_to(0.0, 0.0);
             builder.line_to(t.x.to_pt() as f32, t.y.to_pt() as f32);
         }
         Geometry::Rect(rect) => {
