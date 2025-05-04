@@ -1,12 +1,11 @@
 use ecow::EcoString;
-use ttf_parser::OutlineBuilder;
 use typst_library::layout::{Abs, Point, Ratio, Size, Transform};
 use typst_library::visualize::{
     Curve, CurveItem, FixedStroke, Geometry, LineCap, LineJoin, Paint, RelativeTo, Shape,
 };
 
 use crate::paint::ColorEncode;
-use crate::{SVGRenderer, State, SvgPathBuilder};
+use crate::{SVGRenderer, State, SvgRelativePathBuilder};
 
 impl SVGRenderer {
     /// Render a shape element.
@@ -16,7 +15,7 @@ impl SVGRenderer {
         }
 
         self.xml.start_element("path");
-        // self.xml.write_attribute("class", "typst-shape");
+        self.xml.write_attribute("class", "typst-shape");
 
         if let Some(paint) = &shape.fill {
             self.write_fill(
@@ -159,7 +158,7 @@ impl SVGRenderer {
 /// Convert a geometry to an SVG path.
 #[comemo::memoize]
 fn convert_geometry_to_path(transform: &Transform, geometry: &Geometry) -> EcoString {
-    let mut builder = SvgPathBuilder::default();
+    let mut builder = SvgRelativePathBuilder::default();
 
     match geometry {
         Geometry::Line(t) => {
@@ -177,7 +176,7 @@ fn convert_geometry_to_path(transform: &Transform, geometry: &Geometry) -> EcoSt
 }
 
 pub fn convert_curve(transform: &Transform, curve: &Curve) -> EcoString {
-    let mut builder = SvgPathBuilder::with_translate(Point::new(
+    let mut builder = SvgRelativePathBuilder::with_translate(Point::new(
         transform.tx,
         transform.ty
     ));
@@ -197,4 +196,9 @@ pub fn convert_curve(transform: &Transform, curve: &Curve) -> EcoString {
         }
     }
     builder.0
+}
+
+#[cfg(test)]
+mod tests {
+    fn
 }

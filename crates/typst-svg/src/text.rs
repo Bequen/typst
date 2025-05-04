@@ -21,7 +21,7 @@ impl SVGRenderer {
         let scale: f64 = text.size.to_pt() / text.font.units_per_em();
 
         self.xml.start_element("g");
-        // self.xml.write_attribute("class", "typst-text");
+        self.xml.write_attribute("class", "typst-text");
         self.xml.write_attribute("transform", &format!("scale(1, -1) translate({} {})", state.transform.tx.to_pt(), -state.transform.ty.to_pt()));
 
         let mut x: f64 = 0.0;
@@ -72,9 +72,7 @@ impl SVGRenderer {
 
         self.xml.start_element("use");
         self.xml.write_attribute_fmt("xlink:href", format_args!("#{id}"));
-        self.xml.write_attribute("x", &(x_offset));
-        // self.xml.write_attribute("y", &state.transform.ty.to_pt());
-        // self.xml.write_attribute("transform", &format!("translate({} {})", state.transform.tx.to_pt(), state.transform.ty.to_pt()));
+        self.xml.write_attribute("x", &x_offset);
         self.xml.end_element();
 
         Some(())
@@ -111,7 +109,6 @@ impl SVGRenderer {
         // it.
         let scale_factor = target_height / image.height();
         self.xml.write_attribute("x", &(x_offset / scale_factor));
-        // self.xml.write_attribute("y", &(state.transform.ty.to_pt()));
         self.xml.write_attribute_fmt(
             "transform",
             format_args!("scale({scale_factor} -{scale_factor})",),

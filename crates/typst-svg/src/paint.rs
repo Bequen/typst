@@ -8,7 +8,7 @@ use typst_library::visualize::{Color, FillRule, Gradient, Paint, RatioOrAngle, T
 use typst_utils::hash128;
 use xmlwriter::XmlWriter;
 
-use crate::{Id, SVGRenderer, State, SvgMatrix, SvgPathBuilder};
+use crate::{Id, SVGRenderer, State, SvgMatrix, SvgRelativePathBuilder};
 
 /// The number of segments in a conic gradient.
 /// This is a heuristic value that seems to work well.
@@ -185,7 +185,7 @@ impl SVGRenderer {
                         let theta2 = dtheta * (i + 1) as f32;
 
                         // Create the path for the segment.
-                        let mut builder = SvgPathBuilder::default();
+                        let mut builder = SvgRelativePathBuilder::default();
                         builder.move_to(
                             correct_tiling_pos(center.0),
                             correct_tiling_pos(center.1),

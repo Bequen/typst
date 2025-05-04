@@ -134,13 +134,6 @@ impl State {
         self.pre_concat(Transform::translate(pos.x, pos.y))
     }
 
-    fn translate(self, pos: Point) -> Self {
-        Self {
-            transform: self.transform.post_concat(Transform::translate(pos.x, pos.y)),
-            ..self
-        }
-    }
-
     /// Pre concat the current item's transform.
     fn pre_concat(self, transform: Transform) -> Self {
         Self {
@@ -206,11 +199,9 @@ impl SVGRenderer {
 
     /// Render a frame with the given transform.
     fn render_frame(&mut self, state: State, ts: Transform, frame: &Frame) {
-        if frame.items().len() > 1 {
-            self.xml.start_element("g");
-            if !ts.is_identity() {
-                self.xml.write_attribute("transform", &SvgMatrix(ts));
-            }
+        self.xml.start_element("g");
+        if !ts.is_identity() {
+            self.xml.write_attribute("transform", &SvgMatrix(ts));
         }
 
         for (pos, item) in frame.items() {
@@ -236,9 +227,7 @@ impl SVGRenderer {
             };
         }
 
-        if frame.items().len() > 1 {
-            self.xml.end_element();
-        }
+        self.xml.end_element();
     }
 
     /// Render a group. If the group has `clips` set to true, a clip path will
@@ -251,8 +240,8 @@ impl SVGRenderer {
                 .with_size(group.frame.size()),
         };
 
-        // self.xml.start_element("g");
-        // self.xml.write_attribute("class", "typst-group");
+        self.xml.start_element("g");
+        self.xml.write_attribute("class", "typst-group");
 
         if let Some(label) = group.label {
             self.xml.write_attribute("data-typst-label", &label.resolve());
@@ -266,7 +255,7 @@ impl SVGRenderer {
         }
 
         self.render_frame(state, group.transform, &group.frame);
-        // self.xml.end_element();
+        self.xml.end_element();
     }
 
     /// Finalize the SVG file. This must be called after all rendering is done.
@@ -379,11 +368,12 @@ impl Display for SvgMatrix {
 }
 
 /// A builder for SVG path.
-struct SvgPathBuilder(pub EcoString, pub Ratio, pub Point);
+struct SvgRelativePathBuilder(pub EcoString, pub Ratio, pub Point);
 
-impl SvgPathBuilder {
+impl SvgRelativePathBuilder {
     fn with_translate(pos: Point) -> Self {
-        Self(EcoString::from(format!("M {} {}", pos.x.to_pt(), pos.y.to_pt())), Ratio::one(), pos)
+        // add initial M node to transform the entire path
+        Self(EcoString::from(format!("M {} {}", pos.x.to_pt(), pos.y.to_pt())), Ratio::one(), Point::zero())
     }
 
     fn with_scale(scale: Ratio) -> Self {
@@ -392,6 +382,14 @@ impl SvgPathBuilder {
 
     fn scale(&self) -> f32 {
         self.1.get() as f32
+    }
+
+    fn map_x(&self, x: f32) -> f32 {
+        return x * self.scale() - self.2.x.to_pt() as f32;
+    }
+
+    fn map_y(&self, y: f32) -> f32 {
+        return y * self.scale() - self.2.y.to_pt() as f32;
     }
 
     /// Create a rectangle path. The rectangle is created with the top-left
@@ -424,19 +422,12 @@ impl SvgPathBuilder {
         )
         .unwrap();
     }
-}
 
-impl Default for SvgPathBuilder {
-    fn default() -> Self {
-        Self(Default::default(), Ratio::one(), Point::zero())
-    }
-}
-
-/// A builder for SVG path. This is used to build the path for a glyph.
-impl SvgPathBuilder {
     fn move_to(&mut self, x: f32, y: f32) {
         let scale = self.scale();
-        if x != 0.0 || y != 0.0 {
+        let _x = self.map_x(x);
+        let _y = self.map_y(y);
+        if _x != 0.0 || _y != 0.0 {
             write!(&mut self.0, "m {} {} ", x, y).unwrap();
         }
 
@@ -445,8 +436,8 @@ impl SvgPathBuilder {
 
     fn line_to(&mut self, x: f32, y: f32) {
         let scale = self.scale();
-        let _x = x * scale - self.2.x.to_pt() as f32;
-        let _y = y * scale - self.2.y.to_pt() as f32;
+        let _x = self.map_x(x);
+        let _y = self.map_y(y);
 
         if _x != 0.0 && _y != 0.0 {
             write!(&mut self.0, "l {} {} ", _x, _y).unwrap();
@@ -455,34 +446,23 @@ impl SvgPathBuilder {
         } else if _y != 0.0 {
             write!(&mut self.0, "v {} ", _y).unwrap();
         }
-        self.2 = Point::new(Abs::pt((x * scale) as f64), Abs::pt((y * scale) as f64));
-    }
 
-    fn quad_to(&mut self, x1: f32, y1: f32, x: f32, y: f32) {
-        let scale = self.scale();
-        write!(
-            &mut self.0,
-            "q {} {} {} {} ",
-            x1 * scale,// - self.2.x.to_pt() as f32,
-            y1 * scale,// - self.2.y.to_pt() as f32,
-            x * scale,// - self.2.x.to_pt() as f32,
-            y * scale,// - self.2.y.to_pt() as f32
-        )
-        .unwrap();
-        // self.2 += Point::new(Abs::pt((x * scale) as f64), Abs::pt((y * scale) as f64));
+        self.2 = Point::new(Abs::pt((x * scale) as f64), Abs::pt((y * scale) as f64));
     }
 
     fn curve_to(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, x: f32, y: f32) {
         let scale = self.scale();
+        let curve = format!("c {} {} {} {} {} {} ",
+            self.map_x(x1),
+            self.map_y(y1),
+            self.map_x(x2),
+            self.map_y(y2),
+            self.map_x(x),
+            self.map_y(y));
         write!(
             &mut self.0,
-            "c {} {} {} {} {} {} ",
-            x1 * scale - self.2.x.to_pt() as f32,
-            y1 * scale - self.2.y.to_pt() as f32,
-            x2 * scale - self.2.x.to_pt() as f32,
-            y2 * scale - self.2.y.to_pt() as f32,
-            x * scale - self.2.x.to_pt() as f32,
-            y * scale - self.2.y.to_pt() as f32
+            "{}",
+            curve
         )
         .unwrap();
         self.2 = Point::new(Abs::pt((x * scale) as f64), Abs::pt((y * scale) as f64));
@@ -493,6 +473,13 @@ impl SvgPathBuilder {
     }
 }
 
+impl Default for SvgRelativePathBuilder {
+    fn default() -> Self {
+        Self(Default::default(), Ratio::one(), Point::zero())
+    }
+}
+
+/// A builder for SVG path. This is used to build the path for a glyph.
 struct SvgGlyphPathBuilder(pub EcoString, pub Ratio);
 
 impl SvgGlyphPathBuilder {
